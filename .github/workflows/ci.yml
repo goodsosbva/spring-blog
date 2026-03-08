@@ -1,4 +1,4 @@
-name: CI
+name: CI/CD
 
 on:
   push:
@@ -23,3 +23,24 @@ jobs:
 
       - name: Build with Gradle
         run: ./gradlew build
+
+      - name: Get current time
+        uses: josStorer/get-current-time@v2.0.2
+        id: current-time
+        with:
+          format: 'yyyy-MM-DDTHH-mm-ss'
+          utcOffset: "+09:00"
+      
+      - name: Set artifact
+        run: echo "artifact=$(ls ./build/libs)" >> $GITHUB_ENV
+      
+      - name: Beanstalk Deploy
+        uses: einaregilesson/beanstalk-deploy@v20
+        with:
+          aws_access_key_id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws_secret_access_key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws_region: ap-northeast-2
+          application_name: spring-blog
+          environment_name: spring-blog-env
+          version_label: github-actions-${{ steps.current-time.outputs.formattedTime }}
+          deployment_package: ./build/libs/${{ env.artifact }}
