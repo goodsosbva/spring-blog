@@ -1,0 +1,273 @@
+# Elastic Beanstalk로 환경 만들고 RDS 붙이고, 환경변수 넣고, 로컬에서 RDS 붙이기까지
+
+**배포 전체 흐름 + 트러블슈팅**
+
+---
+
+이 글은 스프링부트 코드를 이미 만든 상태에서 출발해서,
+
+- AWS Elastic Beanstalk(EB) 환경을 만들고
+- EB가 생성한 RDS(MySQL)를 붙이고
+- EB 환경변수로 DB·OAuth 설정을 넣고
+- 마지막으로 **로컬 PC에서 RDS에 직접 접속**하기 위해 VPC·보안그룹·인바운드 규칙까지 손보는 과정을
+
+처음부터 끝까지 **「큰 흐름」**으로 정리한 기록이다.
+
+중간에 막힐 때마다 던졌던 질문  
+(「이 에러는 네트워크냐 인증이냐?」, 「엔드포인트는 어디서 보냐?」, 「Publicly accessible이 어디 있냐?」)과,  
+그 질문을 통해 원인을 확정하고 고친 내용도 흐름 사이에 그대로 끼워 넣었다.
+
+---
+
+## 1. EB 환경 생성: 배포판을 먼저 만든다
+
+가장 먼저 한 일은 **Elastic Beanstalk 환경을 만드는 것**이다.  
+EB를 만들면, EB가 어떤 플랫폼(Corretto 17, Amazon Linux 등)으로 앱을 실행할지, 어떤 VPC·Subnet·보안그룹으로 인스턴스를 띄울지 기본 틀이 잡힌다.
+
+### 흐름
+
+- AWS 콘솔 → **Elastic Beanstalk** → Applications(또는 Environments)
+- 새 환경 생성 (예: `Spring-blog-env`)
+- **Platform:** Corretto 17 (64bit Amazon Linux)
+- 환경이 생성되면 **Domain**이 생긴다 (예: `spring-blog-env.eba-…elasticbeanstalk.com`)
+
+### 1차 확인
+
+- **Environment Health**가 OK인지
+- **Events** 탭에서 「환경이 정상 생성되었는지」 로그로 확인
+
+---
+
+## 2. EB가 RDS를 만들게 연결
+
+**「RDS는 EB가 아니라 RDS 콘솔에서 확인한다」**
+
+다음은 RDS(MySQL)를 만드는 단계다. 전개는 두 가지가 있다.
+
+- **EB에서 「환경과 커플링된 DB」를 생성** (초보자에게 가장 쉬움)
+- 또는 **RDS를 따로 만들고 EB가 그 엔드포인트로 접속** (운영에서 흔함)
+
+이번 흐름은 **「EB가 커플드 DB를 만드는」** 방식이었다.
+
+### 중요 포인트
+
+EB 화면에서 DB가 붙어 있다는 「요약」은 보이지만, **진짜 DB 엔드포인트(host)는 RDS가 들고 있다.**
+
+### 질문
+
+> 「DB 엔드포인트는 EB 화면에 없는데 어디서 보지?」
+
+### 정답 흐름
+
+1. **EB 환경 → Events 탭**을 보면  
+   `Created RDS database named: awseb-….` 같은 로그가 찍힌다
+2. 그 **DB identifier**를 가지고 **AWS 콘솔 → RDS → Databases**에서 해당 인스턴스를 찾는다
+3. **RDS 인스턴스 상세 → Connectivity & security**에서 **Endpoint·Port**를 확인한다
+
+### 이 단계에서 얻는 것
+
+- **RDS endpoint:** `xxxxx.ap-northeast-2.rds.amazonaws.com`
+- **port:** 3306
+- **DB name(초기 DB):** `ebdb` (커플드 생성 시 자주 이 이름)
+
+---
+
+## 3. EB 환경변수(Environment properties)에 DB 설정 넣기
+
+**「앱이 DB를 보는 눈을 여기서 만든다」**
+
+EB에 배포한 스프링부트 앱이 RDS로 붙으려면, 앱이 DB 접속 정보를 알아야 한다.  
+로컬에서는 `application.yml`에 있었던 값들이, EB에서는 **환경변수**로 들어가는 경우가 많다.
+
+### 흐름
+
+- EB 환경 → **Configuration → Software → Edit**
+- **Environment properties**에 아래를 추가한다
+
+### 필수 (예시)
+
+```
+SPRING_DATASOURCE_URL = jdbc:mysql://<RDS_ENDPOINT>:3306/<DBNAME>?…
+SPRING_DATASOURCE_USERNAME = khs
+SPRING_DATASOURCE_PASSWORD = ****
+```
+
+### OAuth (로그인 쓸 거면)
+
+```
+SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_ID = …
+SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_CLIENT_SECRET = …
+SPRING_SECURITY_OAUTH2_CLIENT_REGISTRATION_GOOGLE_SCOPE = email,profile
+```
+
+### 흔한 실수
+
+- URL 끝 **DBNAME**이 실제 테이블이 있는 DB와 다른 경우  
+  (예: `blog`로 잡혔는데 테이블은 `ebdb`에 있음)
+- 비번을 RDS에서 리셋했는데 **EB 환경변수 비번은 안 바꾼 경우**
+
+이 실수는 나중에 OAuth 콜백에서 500으로 크게 터졌다 (뒤에서 다시 나온다).
+
+---
+
+## 4. 로컬에서 RDS에 직접 접속하려면
+
+**VPC·보안그룹·인바운드가 반드시 필요하다**
+
+여기서부터가 많은 사람이 빼먹는 **핵심**이다.  
+EB 앱이 RDS에 붙는 것과, **로컬 PC가 RDS에 붙는 것**은 난이도가 다르다.
+
+로컬에서 RDS에 붙으려면 반드시 다음이 맞아야 한다.
+
+- RDS가 외부에서 접근 가능한 구조인지 (**Publicly accessible**)
+- RDS 보안그룹 **Inbound**가 3306을 열었는지
+- **Source**가 「내 공인 IP(/32)」인지
+- 네트워크가 바뀌면 공인 IP가 바뀌어서 다시 막히는지
+
+### 질문
+
+> 「ipconfig에 나온 172.30.x.x를 보안그룹에 넣으면 되나?」
+
+**정답:** 절대 안 된다. **172·192 대역은 사설 IP**라 인터넷에서 의미가 없다.
+
+### 맞는 흐름
+
+#### (1) RDS 인스턴스 → Connectivity & security
+
+- **Publicly accessible**이 No면 로컬 직결은 원칙적으로 안 된다 (타임아웃)
+- 테스트용으로 **Yes**로 바꾸면 외부 접속이 가능해진다 (보안상 운영에선 비추)
+
+#### (2) RDS에 붙은 Security Group을 연다
+
+- RDS 화면의 **VPC security groups** (`sg-…`) 클릭
+- **Inbound rules**에서 추가:
+  - **Type:** MySQL/Aurora
+  - **Port:** 3306
+  - **Source:** My IP (공인 IP/32)
+
+#### 흔한 실수
+
+- 규칙을 「기존 SG 참조 규칙」을 CIDR로 바꾸려다 에러가 남  
+  (`referenced group rule에는 CIDR 넣을 수 없다`)
+- **정답:** 「기존 규칙 수정」이 아니라 **「새 규칙 추가」**였다.
+
+#### (3) 실제로 네트워크가 뚫렸는지 테스트한다 (이게 가장 확실)
+
+**PowerShell:**
+
+```powershell
+Test-NetConnection <RDS_ENDPOINT> -Port 3306
+```
+
+**TcpTestSucceeded: True**면 네트워크는 통과.
+
+### 질문
+
+> 「타임아웃이면 뭐가 문제냐?」
+
+**정답:**  
+타임아웃은 **인증 이전 단계**다. 네트워크·보안그룹·퍼블릭 접근이 문제다.  
+반대로 네트워크가 뚫리면 다음으로 자주 뜨는 에러는 **1045 Access denied**다. 그건 비번·권한 문제다.
+
+---
+
+## 5. 로컬 접속이 1045 Access denied로 바뀌었다면
+
+**이제는 비번·계정 문제다**
+
+`Test-NetConnection`이 True인데 접속이 안 되면, 이제는 네트워크가 아니라 **인증**이 문제다.
+
+```
+Access denied for user 'khs'@'…' (using password: YES)
+```
+
+### 해결 흐름
+
+1. **RDS Modify** → Master password 리셋
+2. 로컬 DB 툴 (IntelliJ/DBeaver)에 새 비번 입력
+3. **EB 환경변수**의 `SPRING_DATASOURCE_PASSWORD`도 동일하게 수정
+
+이렇게 해서 **「로컬에서 RDS 붙기」**까지 확정한다.  
+로컬에서 DB를 볼 수 있으면, 이제 테이블 생성·스키마 정리가 가능해진다.
+
+---
+
+## 6. 배포 후 OAuth 콜백 500
+
+**「OAuth 문제가 아니라 DB 테이블이 없어서 터졌다」**
+
+`/login` 화면은 정상인데, Google 버튼 클릭 후 **`/login/oauth2/code/google`**에서 **500**이 났다.
+
+### 질문
+
+> 「Redirect URI 문제냐? 환경변수 누락이냐? 아니면 DB 저장이 터졌냐?」
+
+**정답은 로그였다.**
+
+### EB → Logs에서 확인한 핵심
+
+```
+Table 'blog.users' doesn't exist
+Table 'blog.article' doesn't exist
+```
+
+즉, 앱이 바라보는 DB가 `blog`인데, **blog에 테이블이 없어서** OAuth 콜백에서 저장·조회가 터진 것이다.
+
+### 깨달은 핵심
+
+- **「배포 성공(Health OK) ≠ 기능 성공」**
+- 기능은 **DB 스키마가 맞아야** 한다.
+
+### 해결: 두 가지 중 하나
+
+**A) 앱이 바라보는 DB를 `ebdb`로 맞춘다**
+
+- EB `SPRING_DATASOURCE_URL` 끝을 `/ebdb`로 통일
+- `ebdb`에 테이블 생성
+
+**B) blog DB를 만들고 거기에 테이블을 만든다**
+
+```sql
+CREATE DATABASE blog;
+USE blog;
+-- users, article, refresh_token 테이블 생성
+```
+
+이번에는 **blog DB를 직접 만들고 테이블을 생성**해서 문제를 해결했다.
+
+---
+
+## 7. 배포 중간에 들어가면 이상했던 이유
+
+「안 되던 게 배포 도중 들어가서 그런가」라는 감각은 **맞았다**.  
+EB가 환경 업데이트 중이면 인스턴스 재시작·교체가 일어나고, 그 순간 들어가면 **404·500**이 오락가락할 수 있다.
+
+그래서 **운영 체크 순서**는 이렇게 고정했다.
+
+1. **EB Events**에서 **update complete** 확인
+2. **Health OK** 확인
+3. **그 다음** 기능 테스트
+
+---
+
+## 8. 최종 요약: 이 흐름만 기억하면 된다
+
+전체를 한 줄로 요약하면:
+
+1. **EB 환경 생성**
+2. **EB 커플드 RDS 생성** (Events에서 DB 식별자 확인)
+3. **RDS 콘솔**에서 endpoint·port 확인
+4. **EB Software 환경변수**에 DB·OAuth 값 넣기
+5. 로컬에서 RDS 붙기 위해 **Publicly accessible + SG Inbound 3306 + My IP(/32)** 세팅
+6. **Test-NetConnection**으로 네트워크 확정
+7. **1045**면 비번 리셋 후 **EB·로컬 모두** 업데이트
+8. 배포 후 **OAuth 500**이면 **EB Logs**로 원인 확정
+9. 이번 케이스는 **blog DB에 테이블이 없어서** 터졌고, DB·테이블 생성으로 해결
+10. 배포 중간 접근은 혼란만 키우니 **update complete 이후** 테스트
+
+이게 **「배포를 위한 거대한 흐름」**의 실전 버전이다.
+
+---
+
+원하시면, 전하 프로젝트의 실제 엔티티 기준 (`users`, `article`, `refresh_token`)으로  
+**「blog DB를 완성시키는 테이블 생성 SQL 세트」**를 한 방에 실행 가능한 형태로 깔끔히 만들어 드리겠사옵니다.

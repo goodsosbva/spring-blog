@@ -1,0 +1,71 @@
+﻿<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title th:text="${article.title}">Article</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <div class="brand">
+          <a class="brand-mark" th:href="@{/articles}">Spring Blog</a>
+          <p class="brand-tag">Sharp notes. Zero fluff.</p>
+        </div>
+        <nav class="nav">
+          <a class="nav-link" th:href="@{/articles}">List</a>
+          <a
+            class="nav-link"
+            th:href="@{/api/articles/{id}(id=${article.id})}"
+            target="_blank"
+            rel="noopener"
+            >JSON</a
+          >
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <a class="back-link" th:href="@{/articles}">Back</a>
+
+      <article class="post">
+        <input type="hidden" id="article-id" th:value="${article.id}">
+        <header class="post-head">
+          <h1 class="post-title" th:text="${article.title}">Title</h1>
+            <div class="text-muted fst-italic mb-2" th:text="|Posted on ${#temporals.format(article.createdAt, 'yyyy-MM-dd')} By ${article.author}|"></div>
+          <div class="post-meta">
+            <span class="chip">ID</span>
+            <span class="mono" th:text="${article.id}">1</span>
+            <span class="dot" th:if="${article.createdAt != null}">•</span>
+            <time
+              class="muted"
+              th:if="${article.createdAt != null}"
+              th:text="${#temporals.format(article.createdAt, 'yyyy-MM-dd HH:mm')}"
+              >0000-00-00 00:00</time
+            >
+          </div>
+        </header>
+
+        <div class="post-content" th:text="${article.content}">Content</div>
+          <button
+            type="button"
+            id="modify-btn"
+            class="btn btn-primary btn-sm"
+            th:onclick="|location.href='@{/new-article(id=${article.id})}'|"
+          >
+            Edit
+          </button>
+          <button class="btn btn-danger" id="delete-btn">Delete</button>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span class="muted">Spring Boot + Thymeleaf</span>
+      </div>
+    </footer>
+  </body>
+
+  <script src="/js/article.js"></script>
+</html>

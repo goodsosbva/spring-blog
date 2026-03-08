@@ -1,0 +1,451 @@
+/* Spring Blog UI - simple, editorial, slightly sharp. */
+:root {
+  --paper: #fbf7ef;
+  --paper-2: #f4f1e7;
+  --ink: #14131a;
+  --muted: rgba(20, 19, 26, 0.68);
+  --border: rgba(20, 19, 26, 0.12);
+  --accent: #0f766e;
+  --accent-2: #c2410c;
+  --shadow: 0 18px 45px rgba(20, 19, 26, 0.10);
+  --radius: 18px;
+  --wrap: 980px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  color: var(--ink);
+  background:
+    radial-gradient(900px circle at 10% -10%, rgba(194, 65, 12, 0.18), transparent 55%),
+    radial-gradient(900px circle at 95% 0%, rgba(15, 118, 110, 0.16), transparent 55%),
+    linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
+  font-family: "Constantia", "Palatino Linotype", Palatino, serif;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: geometricPrecision;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  background:
+    repeating-linear-gradient(90deg, rgba(20, 19, 26, 0.035) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(0deg, rgba(20, 19, 26, 0.025) 0 1px, transparent 1px 28px);
+  pointer-events: none;
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+a {
+  color: inherit;
+  text-decoration-color: rgba(20, 19, 26, 0.35);
+  text-decoration-thickness: 1.5px;
+  text-underline-offset: 3px;
+}
+
+a:hover {
+  text-decoration-color: rgba(15, 118, 110, 0.8);
+}
+
+:focus-visible {
+  outline: 3px solid rgba(15, 118, 110, 0.45);
+  outline-offset: 3px;
+  border-radius: 10px;
+}
+
+.wrap {
+  max-width: var(--wrap);
+  margin: 0 auto;
+  padding: 0 18px;
+  position: relative;
+}
+
+.muted {
+  color: var(--muted);
+}
+
+.mono {
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  font-size: 0.95rem;
+}
+
+.chip {
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-weight: 700;
+  font-size: 0.78rem;
+  padding: 5px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 19, 26, 0.14);
+  background: rgba(251, 247, 239, 0.65);
+}
+
+.site-header {
+  position: sticky;
+  top: 0;
+  backdrop-filter: blur(10px);
+  background: rgba(251, 247, 239, 0.78);
+  border-bottom: 1px solid var(--border);
+  z-index: 10;
+}
+
+.site-header .wrap {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+}
+
+.brand {
+  min-width: 0;
+}
+
+.brand-mark {
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-decoration: none;
+}
+
+.brand-tag {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.95rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.nav {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.nav-link {
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 0.9rem;
+  padding: 8px 10px;
+  border-radius: 999px;
+  text-decoration: none;
+  color: rgba(20, 19, 26, 0.78);
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.nav-link:hover {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: rgba(15, 118, 110, 0.08);
+  color: var(--ink);
+}
+
+.back-link {
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  text-decoration: none;
+  font-weight: 700;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(20, 19, 26, 0.14);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.back-link:hover {
+  border-color: rgba(15, 118, 110, 0.35);
+  background: rgba(15, 118, 110, 0.08);
+}
+
+.page-head {
+  padding: 26px 0 10px;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.page-head h1 {
+  margin: 0;
+  font-size: clamp(1.6rem, 4vw, 2.4rem);
+  font-weight: 850;
+  letter-spacing: -0.02em;
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+}
+
+.empty {
+  margin: 18px 0 0;
+  padding: 18px 18px;
+  border: 1px dashed rgba(20, 19, 26, 0.22);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.45);
+  color: var(--muted);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+  padding: 10px 0 60px;
+}
+
+.card {
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  position: relative;
+  transition: transform 180ms ease, box-shadow 180ms ease;
+}
+
+.card::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(15, 118, 110, 0.10), rgba(194, 65, 12, 0.08));
+  opacity: 0;
+  transition: opacity 180ms ease;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 26px 70px rgba(20, 19, 26, 0.13);
+}
+
+.card:hover::after {
+  opacity: 1;
+}
+
+.card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 18px 18px 16px;
+  text-decoration: none;
+  position: relative;
+  z-index: 1;
+}
+
+.card-title {
+  margin: 0;
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: 1.15rem;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+.card-excerpt {
+  margin: 0;
+  color: var(--muted);
+  font-size: 1rem;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
+.card-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 4px;
+  color: rgba(20, 19, 26, 0.65);
+}
+
+.spacer {
+  flex: 1;
+}
+
+.linkish {
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-weight: 750;
+  color: rgba(15, 118, 110, 0.95);
+}
+
+.site-footer {
+  border-top: 1px solid var(--border);
+  padding: 18px 0 30px;
+  background: rgba(251, 247, 239, 0.65);
+}
+
+/* Article page */
+.post {
+  margin: 28px 0 60px;
+  padding: 26px 24px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: rgba(255, 255, 255, 0.68);
+  box-shadow: var(--shadow);
+  position: relative;
+}
+
+.post::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--radius);
+  background: radial-gradient(800px circle at 15% 15%, rgba(15, 118, 110, 0.10), transparent 55%);
+  opacity: 0.9;
+  pointer-events: none;
+}
+
+.post > * {
+  position: relative;
+  z-index: 1;
+}
+
+.post-title {
+  margin: 0;
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-size: clamp(1.7rem, 4.2vw, 2.6rem);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
+}
+
+.post-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.dot {
+  color: rgba(20, 19, 26, 0.45);
+}
+
+.post-content {
+  margin-top: 18px;
+  font-size: 1.05rem;
+  color: rgba(20, 19, 26, 0.88);
+  white-space: pre-wrap;
+}
+
+/* Buttons */
+.btn {
+  display: inline-block;
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 18px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 160ms ease, border-color 160ms ease, transform 100ms ease;
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn-primary {
+  background: var(--accent);
+  color: #fff;
+  border-color: var(--accent);
+}
+
+.btn-primary:hover {
+  background: #0d5c55;
+  border-color: #0d5c55;
+}
+
+.btn-secondary {
+  background: rgba(20, 19, 26, 0.08);
+  color: var(--ink);
+  border-color: rgba(20, 19, 26, 0.14);
+}
+
+.btn-secondary:hover {
+  background: rgba(20, 19, 26, 0.12);
+  border-color: rgba(20, 19, 26, 0.22);
+}
+
+.btn-danger {
+  background: var(--accent-2);
+  color: #fff;
+  border-color: var(--accent-2);
+}
+
+.btn-danger:hover {
+  background: #a0350a;
+  border-color: #a0350a;
+}
+
+.btn-sm {
+  padding: 8px 14px;
+  font-size: 0.85rem;
+}
+
+/* Form (new article / edit) */
+.post-form .post-title {
+  margin-bottom: 20px;
+}
+
+.form-group {
+  margin-bottom: 20px;
+}
+
+.form-label {
+  display: block;
+  font-family: "Bahnschrift", "Segoe UI Variable Display", "Segoe UI", sans-serif;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--ink);
+  margin-bottom: 8px;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 12px 16px;
+  font-family: inherit;
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: border-color 160ms ease, box-shadow 160ms ease;
+}
+
+.form-input:focus,
+.form-textarea:focus {
+  outline: none;
+  border-color: rgba(15, 118, 110, 0.5);
+  box-shadow: 0 0 0 3px rgba(15, 118, 110, 0.12);
+}
+
+.form-textarea {
+  min-height: 240px;
+  resize: vertical;
+}
+
+.form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 560px) {
+  .site-header .wrap {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .brand-tag {
+    white-space: normal;
+  }
+}

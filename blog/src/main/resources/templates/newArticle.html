@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title th:text="${article.id != null} ? 'Edit' : 'New Article'">New Article</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <div class="brand">
+          <a class="brand-mark" th:href="@{/articles}">Spring Blog</a>
+          <p class="brand-tag">Short notes. Sharp edges. Zero fluff.</p>
+        </div>
+        <nav class="nav">
+          <a class="nav-link" th:href="@{/articles}">List</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <a class="back-link" th:href="@{/articles}">← Back to list</a>
+
+      <article class="post post-form">
+        <input type="hidden" id="article-id" th:value="${article.id}" />
+
+        <header class="post-head">
+          <h1 class="post-title" th:text="${article.id != null} ? 'Edit article' : 'New article'">New article</h1>
+        </header>
+
+        <div class="form-group">
+          <label class="form-label" for="title">Title</label>
+          <input
+            type="text"
+            class="form-input"
+            id="title"
+            placeholder="Article title"
+            th:value="${article.title}"
+          />
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="content">Content</label>
+          <textarea
+            class="form-textarea"
+            id="content"
+            rows="12"
+            placeholder="Write your content..."
+            th:text="${article.content}"
+          ></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button
+            th:if="${article.id != null}"
+            type="button"
+            id="modify-btn"
+            class="btn btn-primary"
+          >
+            Save changes
+          </button>
+          <button
+            th:if="${article.id == null}"
+            type="button"
+            id="create-btn"
+            class="btn btn-primary"
+          >
+            Publish
+          </button>
+          <a class="btn btn-secondary" th:href="@{/articles}">Cancel</a>
+        </div>
+      </article>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span class="muted">Spring Boot + Thymeleaf</span>
+      </div>
+    </footer>
+
+    <script src="/js/article.js"></script>
+  </body>
+</html>

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Articles</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+  </head>
+  <body>
+    <header class="site-header">
+      <div class="wrap">
+        <div class="brand">
+          <a class="brand-mark" th:href="@{/articles}">Spring Blog</a>
+          <p class="brand-tag">Short notes. Sharp edges. Zero fluff.</p>
+        </div>
+        <nav class="nav">
+          <button type="button" class="btn btn-primary" th:onclick="|location.href='@{/new-article}'|">New</button>
+          <a class="nav-link" th:href="@{/thymeleaf/example}">Thymeleaf</a>
+          <a
+            class="nav-link"
+            th:href="@{/api/articles}"
+            target="_blank"
+            rel="noopener"
+            >API</a
+          >
+          <a
+            class="nav-link"
+            th:href="@{/h2-console}"
+            target="_blank"
+            rel="noopener"
+            >H2</a
+          >
+          <a class="nav-link" th:href="@{/logout}">Logout</a>
+        </nav>
+      </div>
+    </header>
+
+    <main class="wrap">
+      <section class="page-head">
+        <h1>Articles</h1>
+        <p class="muted" th:text="|Total ${#lists.size(articles)}|">Total 0</p>
+      </section>
+
+      <p class="empty" th:if="${#lists.isEmpty(articles)}">No posts yet.</p>
+
+      <section class="grid" th:unless="${#lists.isEmpty(articles)}">
+        <article
+          class="card"
+          th:each="article : ${articles}"
+          th:onclick="|location.href='@{/articles/{id}(id=${article.id})}'|"
+          role="link"
+          tabindex="0"
+        >
+          <div class="card-body">
+            <h2 class="card-title" th:text="${article.title}">Title</h2>
+            <p class="card-excerpt" th:text="${article.content}">Content</p>
+            <a
+              class="btn btn-primary"
+              th:href="@{/articles/{id}(id=${article.id})}"
+              onclick="event.stopPropagation()"
+              >Read</a
+            >
+          </div>
+        </article>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <div class="wrap">
+        <span class="muted">Spring Boot + Thymeleaf</span>
+      </div>
+    </footer>
+
+    <script src="/js/token.js"></script>
+    <script src="/js/articleList.js"></script>
+  </body>
+</html>

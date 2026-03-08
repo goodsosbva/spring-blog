@@ -1,0 +1,58 @@
+﻿<!doctype html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Thymeleaf Example</title>
+    <link rel="stylesheet" th:href="@{/css/style.css}">
+</head>
+<body>
+<header class="site-header">
+    <div class="wrap">
+        <div class="brand">
+            <a class="brand-mark" th:href="@{/articles}">Spring Blog</a>
+            <p class="brand-tag">Thymeleaf sandbox</p>
+        </div>
+        <nav class="nav">
+            <a class="nav-link" th:href="@{/articles}">Articles</a>
+            <a class="nav-link" th:href="@{/api/articles}" target="_blank" rel="noopener">API</a>
+        </nav>
+    </div>
+</header>
+
+<main class="wrap">
+    <section class="page-head">
+        <h1>learn to thymeleaf</h1>
+        <p class="muted" th:text="${#temporals.format(today, 'yyyy-MM-dd')}">0000-00-00</p>
+    </section>
+
+    <article class="post">
+        <header class="post-head">
+            <h2 class="post-title">Bound Person</h2>
+        </header>
+
+        <div class="post-content">
+            <div th:object="${person}">
+                <p><strong>Name:</strong> <span th:text="${name}">name</span></p>
+                <p><strong>Age:</strong> <span th:text="${age}">0</span></p>
+                <p><strong>Hobby</strong></p>
+                <ul th:each="hobby : ${hobbies}">
+                    <li th:text="${hobby}"></li>
+                    <span th:if="${hobby == 'basketball'}">primary hobby</span>
+                </ul>
+            </div>
+
+            <p class="linkish" style="margin-top:14px;">
+                <a th:href="@{/api/articles/{id}(id=${person.id})}">see the text</a>
+            </p>
+        </div>
+    </article>
+</main>
+
+<footer class="site-footer">
+    <div class="wrap">
+        <span class="muted">Thymeleaf demo</span>
+    </div>
+</footer>
+</body>
+</html>
