@@ -7,6 +7,7 @@ import khs.blog.config.oauth.OAuth2UserCustomService;
 import khs.blog.repository.RefreshTokenRepository;
 import khs.blog.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnMissingBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpStatus;
@@ -14,6 +15,11 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.oauth2.client.InMemoryOAuth2AuthorizedClientService;
+import org.springframework.security.oauth2.client.OAuth2AuthorizedClientService;
+import org.springframework.security.config.oauth2.client.CommonOAuth2Provider;
+import org.springframework.security.oauth2.client.registration.ClientRegistrationRepository;
+import org.springframework.security.oauth2.client.registration.InMemoryClientRegistrationRepository;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
@@ -118,6 +124,27 @@ public class WebOAuthSecurityConfig {
     @Bean
     public OAuth2AuthorizationRequestBasedOnCookieRepository oAuth2AuthorizationRequestBasedOnCookieRepository() {
         return new OAuth2AuthorizationRequestBasedOnCookieRepository();
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(ClientRegistrationRepository.class)
+    public ClientRegistrationRepository clientRegistrationRepository() {
+        return new InMemoryClientRegistrationRepository(
+                CommonOAuth2Provider.GOOGLE.getBuilder("google")
+                        .clientId("test-client-id")
+                        .clientSecret("test-client-secret")
+                        .scope("profile", "email")
+                        .redirectUri("{baseUrl}/login/oauth2/code/{registrationId}")
+                        .build()
+        );
+    }
+
+    @Bean
+    @ConditionalOnMissingBean(OAuth2AuthorizedClientService.class)
+    public OAuth2AuthorizedClientService oAuth2AuthorizedClientService(
+            ClientRegistrationRepository clientRegistrationRepository
+    ) {
+        return new InMemoryOAuth2AuthorizedClientService(clientRegistrationRepository);
     }
 
 }
